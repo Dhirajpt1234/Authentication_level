@@ -1,4 +1,5 @@
 //jshint esversion:6
+//level 3 : hashing
 
 require("dotenv").config();
 const express = require("express");
@@ -6,6 +7,7 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const port = process.env.port || 3000;
 const encrypt = require("mongoose-encryption");
+const md5 = require("md5");
 
 const app = express();
 
@@ -36,16 +38,6 @@ const userSchema = mongoose.Schema({
   },
 });
 
-// const encKey = process.env.SOME_32BYTE_BASE64_STRING;
-// var sigKey = process.env.SOME_64BYTE_BASE64_STRING;
-
-userSchema.plugin(encrypt, {
-  // encryptionKey: encKey,
-  // signingKey: sigKey,
-  secret: process.env.SECRET,
-  encryptFields: ["password"],
-});
-
 const Auth1 = mongoose.model("Auth1", userSchema);
 
 app.get("/", (req, res) => {
@@ -59,7 +51,7 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   const auth1User = new Auth1({
     name: req.body.username,
-    password: req.body.password,
+    password: md5(req.body.password),
   });
 
   auth1User
@@ -80,7 +72,7 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   const curr_username = req.body.username;
-  const curr_password = req.body.password;
+  const curr_password = md5(req.body.password);
 
   // console.log(curr_username + " " + curr_password);
 
