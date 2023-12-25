@@ -7,7 +7,7 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const port = process.env.port || 3000;
 const encrypt = require("mongoose-encryption");
-const md5 = require("md5");
+const bcrypt = require("bcrypt");
 
 const app = express();
 
@@ -49,21 +49,29 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  const auth1User = new Auth1({
-    name: req.body.username,
-    password: md5(req.body.password),
+  const saltRounds = 10;
+
+  bcrypt.hash(req.body.password, saltRounds, function (err, hash) {
+    if (err) {
+      console.log("error in generating bcypt " + err);
+    } else {
+      const auth1User = new Auth1({
+        name: req.body.username,
+        password: hash,
+      });
+
+      auth1User
+        .save()
+        .then(() => {
+          console.log("use is registered");
+        })
+        .catch((err) => {
+          console.log("user is not registed " + err);
+        });
+
+      res.render("login");
+    }
   });
-
-  auth1User
-    .save()
-    .then(() => {
-      console.log("use is registered");
-    })
-    .catch((err) => {
-      console.log("user is not registed " + err);
-    });
-
-  res.render("login");
 });
 
 app.get("/login", (req, res) => {
@@ -72,20 +80,24 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   const curr_username = req.body.username;
-  const curr_password = md5(req.body.password);
-
-  // console.log(curr_username + " " + curr_password);
+  const curr_password = req.body.password;
 
   Auth1.findOne({ name: curr_username })
     .then((user) => {
-      console.log(user);
-      if (curr_password === user.password) {
-        console.log("successfully logged in");
-        res.render("secrets");
-      } else {
-        console.log("password not matched");
-        res.render("login");
-      }
+      bcrypt.compare(curr_password, user.password, function (err, result) {
+        // result == true
+        if (err) {
+          console.log("problem in loggin in " + err);
+        } else {
+          if (result == true) {
+            console.log("successfully logged in");
+            res.render("secrets");
+          } else {
+            console.log("password not matched");
+            res.render("login");
+          }
+        }
+      });
     })
     .catch((err) => {
       console.log("user not found");
