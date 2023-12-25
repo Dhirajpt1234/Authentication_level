@@ -4,6 +4,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const port = process.env.port || 3000;
+const encrypt = require("mongoose-encryption");
 
 const app = express();
 
@@ -33,6 +34,9 @@ const userSchema = mongoose.Schema({
     required: true,
   },
 });
+
+const secret = "thisisthesecretkeytoencrypt";
+userSchema.plugin(encrypt, { secret: secret, encryptFields: ["password"] });
 
 const Auth1 = mongoose.model("Auth1", userSchema);
 
@@ -70,7 +74,7 @@ app.post("/login", (req, res) => {
   const curr_username = req.body.username;
   const curr_password = req.body.password;
 
-  console.log(curr_username + " " + curr_password);
+  // console.log(curr_username + " " + curr_password);
 
   Auth1.findOne({ name: curr_username })
     .then((user) => {
